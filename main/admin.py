@@ -1,6 +1,7 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 
 from .models import Fee, Item, ItemMedia, RecordedData, Seller, Tag
+from .tasks import get_ebay_homepage_results
 
 
 class FeeInline(admin.TabularInline):
@@ -27,6 +28,16 @@ class ItemAdmin(admin.ModelAdmin):
     filter_horizontal = ("tags",)
     readonly_fields = ("created",)
     inlines = [FeeInline, RecordedDataInline, ItemMediaInline]
+    actions = ['get_ebay_items']
+
+    @admin.action(description="Get items from Ebay homepage")
+    def get_ebay_items(self, request, queryset):
+        task = get_ebay_homepage_results.delay()
+        self.message_user(
+            request,
+            f"Request sent successfully wit task_id {task}",
+            messages.SUCCESS,
+        )
 
 
 @admin.register(Seller)
@@ -64,3 +75,5 @@ class ItemMediaAdmin(admin.ModelAdmin):
     list_filter = ("media_type", "is_primary")
     search_fields = ("item__name", "alt_text")
     readonly_fields = ("uploaded_at",)
+
+    
