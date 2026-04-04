@@ -1,7 +1,7 @@
 from django.contrib import admin, messages
 
 from .models import Fee, Item, ItemMedia, RecordedData, Seller, Tag
-from .tasks import get_ebay_homepage_results
+from scrape.tasks import get_ebay_homepage_results
 
 
 class FeeInline(admin.TabularInline):

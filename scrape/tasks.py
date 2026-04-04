@@ -1,12 +1,12 @@
 from celery import shared_task
 from service.scraper.ebay import EbayScraper
 
-from .models import Item, RecordedData, SourceName
+from main.models import Item, RecordedData, SourceName
 
 @shared_task
 def get_ebay_homepage_results():
     with EbayScraper(False) as scrapper:
-        results = scrapper.get_homepage_products(5)
+        results = scrapper.get_homepage_products()
     
     for r in results:
         item = Item.objects.filter(external_id=r.external_id).first()
