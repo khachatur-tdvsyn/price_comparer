@@ -1,20 +1,24 @@
 import re
 
 from .base import BaseShopScraper, ScrapedGeneralResult
-# from .base import BaseShopScraper, ScrapedGeneralResult
+# from base import BaseShopScraper, ScrapedGeneralResult
 from decimal import Decimal
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.remote.webelement import WebElement
 from typing import Optional
 
+from urllib.parse import quote
+
+def get_discount(new_price, old_price):
+    return (1 - new_price/old_price)*100
+
 
 class EbayScraper(BaseShopScraper):
     base_url = 'https://www.ebay.com'
 
     items_list_selector = r'#s0-2-0-1-1-0-2-9-4-11-2-0-3-0-1-3-\@homepage-0-0-5\[0\]-\@row_xc_homepage_general_dweb_so-1-0-\@102690-featured-deals-2-7-4-1-11-1-0-4-2-0-5-1-0-list'
-    
-    ID_RE = re.compile(r'https:\/\/www\.ebay\.com\/itm\/(\d+)')
+    ID_RE = re.compile(r'https:\/\/www\.ebay\.com\/itm\/(\d+)\??.*')
     PRICE_RE = re.compile(r'.?([\d\.]+)')
 
     def _get_price(self, element: WebElement) -> Optional[Decimal]:
@@ -54,7 +58,7 @@ class EbayScraper(BaseShopScraper):
             else:
                 discounted_price_val = start_price_val = self._get_price(price_item)
 
-            id = self.ID_RE.match(str(link.get_attribute('href')))
+            id = self.ID_RE.match(str(link.get_attribute('href'))).group(1)
             print(id, start_price_val, discounted_price_val)
 
             results.append(ScrapedGeneralResult(
@@ -63,7 +67,7 @@ class EbayScraper(BaseShopScraper):
                 link=link.get_attribute('href'),
                 name=name.text,
                 price=start_price_val,
-                discount=(1 - discounted_price_val/start_price_val)*100
+                discount=get_discount(discounted_price_val,start_price_val)
             ))
         
         return results
@@ -72,11 +76,44 @@ class EbayScraper(BaseShopScraper):
         ...
     
     def search(self, query, max_results = 20):
-        ...
+        search_url = self.base_url + '/sch/i.html?_nkw={0}'
+        self.driver.get(search_url.format(quote(query)))
+
+        search_results_list = self.driver.find_element(By.CSS_SELECTOR, '.srp-results')
+        items = search_results_list.find_elements(By.TAG_NAME, 'li')
+
+        results = []
+        for c, i in enumerate(items):
+            if c >= max_results:
+                break
+
+            name_item = i.find_element(By.CSS_SELECTOR, '.s-card__title:nth-child(1)')
+            price_item = i.find_element(By.CSS_SELECTOR, 'div:nth-child(1) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > span:nth-child(1)')
+            old_price_item = self._find_element_nowait(By.CSS_SELECTOR, 'div:nth-child(1) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > span:nth-child(3)', i)
+            link_item = i.find_element(By.CSS_SELECTOR, '.s-card__link')
+
+            id = self.ID_RE.match(str(link_item.get_attribute('href')))
+
+            print(price_item.text, old_price_item and old_price_item.text)
+            price = self._get_price(price_item)
+            old_price = self._get_price(old_price_item) if old_price_item else price
+
+            results.append(ScrapedGeneralResult(
+                external_id=id,
+                image_url=None,
+                name=name_item.text,
+                price=price,
+                discount=get_discount(price, old_price),
+                link=link_item.get_attribute('href')
+            ))
+
+        return results
+            
 
 if __name__ == '__main__':
     with EbayScraper(False) as scrapper:
-        results = scrapper.get_homepage_products()
+        results = scrapper.search('samsung', 5)
         with open('results.txt', 'w') as f:
+            print(results)
             print(results, file=f, flush=True)
     

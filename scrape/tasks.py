@@ -26,3 +26,27 @@ def get_ebay_homepage_results():
             discount=r.discount,
         )
         recorded_data.save()
+
+@shared_task
+def get_ebay_search_results(search_text, max_results):
+    with EbayScraper(False) as scrapper:
+        results = scrapper.search(search_text, max_results)
+    
+    for r in results:
+        item = Item.objects.filter(external_id=r.external_id).first()
+        if not item:
+            item = Item(
+                external_id=r.external_id,
+                name=r.name,
+                link=r.link,
+                source=SourceName.EBAY
+            )
+            item.save()
+
+        recorded_data = RecordedData(
+            item=item,
+            currency=r.currency,
+            price=r.price,
+            discount=r.discount,
+        )
+        recorded_data.save()

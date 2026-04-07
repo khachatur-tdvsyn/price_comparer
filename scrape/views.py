@@ -3,17 +3,44 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from celery.result import AsyncResult
 
-from .tasks import get_ebay_homepage_results
+from .tasks import (
+    get_ebay_homepage_results,
+    get_ebay_search_results
+)
+
+from .serializers import (
+    ScraperSearchSerializer
+)
 
 # Create your views here.
-class EbayScraperViewSet(viewsets.ViewSet):
+class EbayScraperViewSet(viewsets.GenericViewSet):
     permission_classes = []
+    
+    def get_serializer_class(self):
+        if self.action in ('search',):
+            return ScraperSearchSerializer
+        
+        return None
 
     @action(detail=False, methods=['post'], url_path='homepage')
     def homepage(self, request):
-
         # Trigger async task
         celery_task = get_ebay_homepage_results.delay()
+        
+        return Response(
+            {
+                "task_id": celery_task.id,
+                "status": "pending",
+                "message": "Homepage scraping task queued successfully"
+            },
+            status=status.HTTP_202_ACCEPTED
+        )
+    
+    @action(detail=False, methods=['post'], url_path='search')
+    def search(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid()
+        celery_task = get_ebay_search_results.delay(**serializer.validated_data)
         
         return Response(
             {
