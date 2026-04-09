@@ -1,7 +1,8 @@
 import re
 
-from .base import BaseShopScraper, ScrapedGeneralResult
-# from base import BaseShopScraper, ScrapedGeneralResult
+
+from .base import BaseShopScraper, ScrapedGeneralResult, ScrapedProduct, Fee, FeeType
+# from base import BaseShopScraper, ScrapedGeneralResult, ScrapedProduct, Fee, FeeType
 from decimal import Decimal
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
@@ -20,11 +21,12 @@ class EbayScraper(BaseShopScraper):
     items_list_selector = r'#s0-2-0-1-1-0-2-9-4-11-2-0-3-0-1-3-\@homepage-0-0-5\[0\]-\@row_xc_homepage_general_dweb_so-1-0-\@102690-featured-deals-2-7-4-1-11-1-0-4-2-0-5-1-0-list'
     ID_RE = re.compile(r'https:\/\/www\.ebay\.com\/itm\/(\d+)\??.*')
     PRICE_RE = re.compile(r'.?([\d\.]+)')
+    DISCOUNT_RE = re.compile(r'(\d+)%')
 
     def _get_price(self, element: WebElement) -> Optional[Decimal]:
         comparing_text = element.text.replace(',', '')
         price_val = self.PRICE_RE.findall(comparing_text)
-        return Decimal(price_val[0])
+        return Decimal(price_val[0]) if len(price_val) > 0 else None
     
     def get_homepage_products(self, max_results=20):
         item_list = self.wait_for(
@@ -72,8 +74,53 @@ class EbayScraper(BaseShopScraper):
         
         return results
     
+    def _get_discount_value(self, element: WebElement):
+        if element:
+            matches = self.DISCOUNT_RE.findall(element.text)
+            return Decimal(matches[0]) if len(matches) > 0 else None
+        return None
+    
     def get_product(self, external_id):
-        ...
+        product_url = self.base_url + '/itm/{0}'.format(external_id)
+        self.driver.get(product_url)
+
+        name_item = self.driver.find_element(By.XPATH, '/html/body/div[2]/main/div[1]/div[1]/div[4]/div/div/div[2]/div/div/div[1]/h1/span')
+        price_item = self.driver.find_element(By.XPATH, '/html/body/div[2]/main/div[1]/div[1]/div[4]/div/div/div[2]/div/div/div[3]/div/div/div/span[1]')
+        
+        # description_item = self.driver.find_element(By.XPATH, '/html/body/div[2]/main/div[1]/div[1]/div[5]/div[1]/div/div[2]/div/div/div[2]')
+        description_item = self.driver.find_element(By.CSS_SELECTOR, '.vim.d-item-description')
+        
+        
+        options_item = self.driver.find_element(By.CSS_SELECTOR, '.ux-layout-section-module-evo')
+
+        option_items = options_item.find_elements(By.TAG_NAME, 'dl')
+        options = dict()
+        for i in option_items:
+            key, value = i.find_element(By.TAG_NAME, 'dt'), i.find_element(By.TAG_NAME, 'dd')
+            options[key.text] = value.text
+        
+        seller_item = self.driver.find_element(By.CSS_SELECTOR, '.x-store-information__store-name > a')
+        # Fees section
+        shipping_fee_item = self.driver.find_element(By.CSS_SELECTOR, '.ux-labels-values--shipping')
+
+        discount_item = self._find_element_nowait(By.CSS_SELECTOR, '.x-price-transparency--discount')
+
+        return ScrapedProduct(
+            external_id=external_id,
+            name=name_item.text,
+            link=self.driver.current_url,
+            price=self._get_price(price_item),
+            description=description_item.get_attribute('innerHTML'),
+            seller_name=seller_item.text,
+            seller_link=seller_item.get_attribute('href'),
+            options=options,
+            fees=[
+                Fee(FeeType.SHIPPING, self._get_price(shipping_fee_item))
+            ],
+            discount=self._get_discount_value(discount_item)
+        )
+        
+        # Temp: get .vim x-breadcrumb 
     
     def search(self, query, max_results = 20):
         search_url = self.base_url + '/sch/i.html?_nkw={0}'

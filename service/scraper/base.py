@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Optional
 
+from enum import IntEnum
+
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service
@@ -15,6 +17,18 @@ from selenium.common.exceptions import NoSuchElementException
 
 logger = logging.getLogger(__name__)
 
+class FeeType(IntEnum):
+    SHIPPING = 1
+    TAX = 2
+    IMPORT = 3
+    SERVICE = 4
+    OTHER = 5
+
+@dataclass
+class Fee:
+    fee_type: FeeType
+    amount: Decimal
+    currency: str = "USD"
 
 @dataclass
 class ScrapedProduct:
@@ -24,8 +38,11 @@ class ScrapedProduct:
     link: str
     price: Decimal
     currency: str = "USD"
+    fees: Optional[list[Fee]] = field(default_factory=list)
+    options: Optional[dict] = None
     description: Optional[str] = None
     seller_name: Optional[str] = None
+    seller_link: Optional[str] = None
     rating: Optional[Decimal] = None
     rating_count: Optional[int] = None
     discount: Optional[Decimal] = None

@@ -5,7 +5,8 @@ from celery.result import AsyncResult
 
 from .tasks import (
     get_ebay_homepage_results,
-    get_ebay_search_results
+    get_ebay_search_results,
+    get_ebay_product_result
 )
 
 from .serializers import (
@@ -46,7 +47,20 @@ class EbayScraperViewSet(viewsets.GenericViewSet):
             {
                 "task_id": celery_task.id,
                 "status": "pending",
-                "message": "Homepage scraping task queued successfully"
+                "message": "Search scraping task queued successfully"
+            },
+            status=status.HTTP_202_ACCEPTED
+        )
+
+    @action(detail=False, methods=['post'], url_path='product/(?P<external_id>[^/.]+)')
+    def product(self, request, external_id=None):
+        celery_task = get_ebay_product_result.delay(str(external_id))
+        
+        return Response(
+            {
+                "task_id": celery_task.id,
+                "status": "pending",
+                "message": "Product scraping task queued successfully"
             },
             status=status.HTTP_202_ACCEPTED
         )
