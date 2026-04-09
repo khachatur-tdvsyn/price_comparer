@@ -1,8 +1,9 @@
 import re
 
-
-from .base import BaseShopScraper, ScrapedGeneralResult, ScrapedProduct, Fee, FeeType
-# from base import BaseShopScraper, ScrapedGeneralResult, ScrapedProduct, Fee, FeeType
+if __name__ == '__main__':
+    from base import BaseShopScraper, ScrapedGeneralResult, ScrapedProduct, Fee, FeeType
+else:
+    from .base import BaseShopScraper, ScrapedGeneralResult, ScrapedProduct, Fee, FeeType
 from decimal import Decimal
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
@@ -23,10 +24,18 @@ class EbayScraper(BaseShopScraper):
     PRICE_RE = re.compile(r'.?([\d\.]+)')
     DISCOUNT_RE = re.compile(r'(\d+)%')
 
+    def _normalize_url(self, url: str):
+        sign_index = url.find('?')
+        return url[:sign_index] if sign_index > 0 else url
+
     def _get_price(self, element: WebElement) -> Optional[Decimal]:
         comparing_text = element.text.replace(',', '')
         price_val = self.PRICE_RE.findall(comparing_text)
-        return Decimal(price_val[0]) if len(price_val) > 0 else None
+        try:
+            if len(price_val) > 0:
+                return Decimal(price_val[0])
+        except Exception as e:
+            print(f'Some exception happened: {e=}, {price_val=}')
     
     def get_homepage_products(self, max_results=20):
         item_list = self.wait_for(
@@ -135,23 +144,30 @@ class EbayScraper(BaseShopScraper):
                 break
 
             name_item = i.find_element(By.CSS_SELECTOR, '.s-card__title:nth-child(1)')
-            price_item = i.find_element(By.CSS_SELECTOR, 'div:nth-child(1) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > span:nth-child(1)')
-            old_price_item = self._find_element_nowait(By.CSS_SELECTOR, 'div:nth-child(1) > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) > div:nth-child(1) > span:nth-child(3)', i)
+            price_item = i.find_element(By.CSS_SELECTOR, '.su-styled-text.primary.bold.large-1.s-card__price')
+            old_price_item = self._find_element_nowait(By.CSS_SELECTOR, '.su-styled-text.secondary.strikethrough.large', i)
             link_item = i.find_element(By.CSS_SELECTOR, '.s-card__link')
 
             id = self.ID_RE.match(str(link_item.get_attribute('href')))
 
-            print(price_item.text, old_price_item and old_price_item.text)
+            print(f'price: {price_item.text}, old price {old_price_item and old_price_item.text}')
             price = self._get_price(price_item)
             old_price = self._get_price(old_price_item) if old_price_item else price
+            print(f'{price=}, {old_price=}')
+
+            # Temporary deal with price when it doesn't found 
+            if price is None:
+                print('Unexpectedly price is zero in', price_item, price_item.get_property('innerHTML'))
+                price=-1
+
 
             results.append(ScrapedGeneralResult(
-                external_id=id,
+                external_id=id.group(1),
                 image_url=None,
                 name=name_item.text,
                 price=price,
                 discount=get_discount(price, old_price),
-                link=link_item.get_attribute('href')
+                link=self._normalize_url(link_item.get_attribute('href'))
             ))
 
         return results
@@ -159,7 +175,7 @@ class EbayScraper(BaseShopScraper):
 
 if __name__ == '__main__':
     with EbayScraper(False) as scrapper:
-        results = scrapper.search('samsung', 5)
+        results = scrapper.search('iphone', 7)
         with open('results.txt', 'w') as f:
             print(results)
             print(results, file=f, flush=True)

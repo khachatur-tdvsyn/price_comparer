@@ -141,3 +141,12 @@ CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
+
+# Scraper session settings
+SCRAPER_OPTIONS = {
+    'headless': False, 
+    'implicit_wait': 5,
+    'page_load_timeout': 30
+    # Specify driver path if it differs from original browser path
+    # "driver_path": "/usr/bin/firefox"
+}
