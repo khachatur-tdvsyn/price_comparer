@@ -48,9 +48,8 @@ class Item(models.Model):
     )
     tags = models.ManyToManyField(Tag, blank=True, related_name="items")
     
-    # Commented temporary for migration purpose
-    # class Meta:
-        # unique_together = ("source", "external_id")
+    class Meta:
+        unique_together = ("source", "external_id")
         
     def __str__(self):
         return self.name

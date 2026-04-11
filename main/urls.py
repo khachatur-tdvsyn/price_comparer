@@ -11,5 +11,10 @@ router.register(r'recorded-data', views.RecordedDataViewSet)
 router.register(r'item-media', views.ItemMediaViewSet)
 
 urlpatterns = [
+    path(
+        'items/<str:source>/<str:external_id>', 
+         views.ItemViewSet.as_view({'get': 'retrieve'}), 
+         name='item-detail'
+    ),
     path('', include(router.urls)),
 ]

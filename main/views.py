@@ -9,6 +9,8 @@ from .serializers import (
     RecordedDataSerializer,
     ItemMediaSerializer,
 )
+from rest_framework.exceptions import NotFound
+from rest_framework.response import Response
 
 
 class SellerViewSet(viewsets.ModelViewSet):
@@ -24,6 +26,18 @@ class TagViewSet(viewsets.ModelViewSet):
 class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
+
+    def retrieve(self, request, external_id=None, source=None):
+        try:
+            # Query using both fields
+            instance = Item.objects.get(external_id=external_id, source=source)
+            serializer = self.get_serializer(instance)
+            return Response(serializer.data)
+        
+        except Item.DoesNotExist:
+            raise NotFound(
+                detail=f"Object with id={external_id} and source={source} not found."
+            )
 
 
 class FeeViewSet(viewsets.ModelViewSet):
