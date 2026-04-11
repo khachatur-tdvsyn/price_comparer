@@ -24,7 +24,7 @@ class TagViewSet(viewsets.ModelViewSet):
 
 
 class ItemViewSet(viewsets.ModelViewSet):
-    queryset = Item.objects.all()
+    queryset = Item.objects.all().order_by('-created')
     serializer_class = ItemSerializer
 
     def retrieve(self, request, external_id=None, source=None):

@@ -5,12 +5,14 @@ from celery import shared_task
 
 from service.scraper.ebay import EbayScraper
 from main.models import Item, RecordedData, SourceName, Seller, Fee
+from .sessions import SessionManager
+
+EBAY_SCRAPER_TYPE = 'ebay'
 
 @shared_task
 @transaction.atomic
 def get_ebay_homepage_results():
-    with EbayScraper(**settings.SCRAPER_OPTIONS) as scrapper:
-        results = scrapper.get_homepage_products()
+    results = SessionManager.run_session(EBAY_SCRAPER_TYPE, 'get_homepage_products')
     
     return_ids = []
 
@@ -40,9 +42,8 @@ def get_ebay_homepage_results():
 @shared_task
 @transaction.atomic
 def get_ebay_search_results(search_text, max_results):
-    with EbayScraper(**settings.SCRAPER_OPTIONS) as scrapper:
-        results = scrapper.search(search_text, max_results)
-    
+   
+    results = SessionManager.run_session(EBAY_SCRAPER_TYPE, 'search', search_text, max_results)
 
     return_ids = []
     for r in results:
@@ -71,9 +72,8 @@ def get_ebay_search_results(search_text, max_results):
 @shared_task
 @transaction.atomic
 def get_ebay_product_result(external_id):
-    with EbayScraper(**settings.SCRAPER_OPTIONS) as scrapper:
-        result = scrapper.get_product(external_id)
-
+    
+    result = SessionManager.run_session(EBAY_SCRAPER_TYPE, 'get_product', external_id)
     print(result)
     
     item, created = Item.objects.get_or_create(external_id=external_id, source=SourceName.EBAY)

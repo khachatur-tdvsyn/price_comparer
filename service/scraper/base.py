@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Optional
+import time
 
 from enum import IntEnum
 
@@ -67,6 +68,7 @@ class BaseShopScraper(ABC):
     """
 
     base_url: str  # Must be defined by each subclass
+    avaiable_actions = ('get_homepage_products', 'search', 'get_product')
 
     def __init__(
         self,
@@ -80,6 +82,8 @@ class BaseShopScraper(ABC):
         self.page_load_timeout = page_load_timeout
         self.driver_path = driver_path
         self._driver: Optional[WebDriver] = None
+        self._is_running = False
+        self._last_activity = time.time()
 
     # ------------------------------------------------------------------
     # Driver lifecycle
@@ -107,6 +111,14 @@ class BaseShopScraper(ABC):
         if self._driver is None:
             raise RuntimeError("Driver is not started. Use the context manager or call start().")
         return self._driver
+    
+    @property
+    def is_running(self):
+        return self._is_running
+    
+    @property
+    def last_activity(self):
+        return self._last_activity
 
     def start(self) -> "BaseShopScraper":
         """Initialise the WebDriver and navigate to base_url."""
@@ -180,6 +192,18 @@ class BaseShopScraper(ABC):
         """
         raise NotImplementedError(f"{self.__class__.__name__} does not implement login().")
 
+    def run_action(self, action_name, *args, **kwargs):
+        
+        if action_name not in self.avaiable_actions:
+            raise IndexError(f'Unknown actions for {self.__class__.__name__}. Only avaiable options {self.avaiable_actions}')
+        
+        try:
+            self._is_running = True
+            results = getattr(self, action_name)(*args, **kwargs)
+            return results
+        finally:
+            self._is_running = False
+            self._last_activity = time.time()
     # ------------------------------------------------------------------
     # Abstract interface — must be implemented by every subclass
     # ------------------------------------------------------------------

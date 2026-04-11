@@ -38,6 +38,8 @@ class EbayScraper(BaseShopScraper):
             print(f'Some exception happened: {e=}, {price_val=}')
     
     def get_homepage_products(self, max_results=20):
+        self.driver.get(self.base_url)
+
         item_list = self.wait_for(
             (
                 By.CSS_SELECTOR,
