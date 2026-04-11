@@ -73,7 +73,7 @@ class EbayScraper(BaseShopScraper):
             print(id, start_price_val, discounted_price_val)
 
             results.append(ScrapedGeneralResult(
-                external_id=id.group(1),
+                external_id=id,
                 image_url=image.get_attribute('src'),
                 link=link.get_attribute('href'),
                 name=name.text,
@@ -159,6 +159,10 @@ class EbayScraper(BaseShopScraper):
             if price is None:
                 print('Unexpectedly price is zero in', price_item, price_item.get_property('innerHTML'))
                 price=-1
+            
+            if old_price is None:
+                print('Unexpectedly price is zero in', old_price_item)
+                old_price=-1
 
 
             results.append(ScrapedGeneralResult(

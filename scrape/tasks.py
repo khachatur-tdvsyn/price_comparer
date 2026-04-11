@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.db import transaction
 
 from celery import shared_task
 
@@ -6,6 +7,7 @@ from service.scraper.ebay import EbayScraper
 from main.models import Item, RecordedData, SourceName, Seller, Fee
 
 @shared_task
+@transaction.atomic
 def get_ebay_homepage_results():
     with EbayScraper(**settings.SCRAPER_OPTIONS) as scrapper:
         results = scrapper.get_homepage_products()
@@ -36,6 +38,7 @@ def get_ebay_homepage_results():
     return return_ids
 
 @shared_task
+@transaction.atomic
 def get_ebay_search_results(search_text, max_results):
     with EbayScraper(**settings.SCRAPER_OPTIONS) as scrapper:
         results = scrapper.search(search_text, max_results)
@@ -66,9 +69,12 @@ def get_ebay_search_results(search_text, max_results):
     return return_ids
 
 @shared_task
+@transaction.atomic
 def get_ebay_product_result(external_id):
     with EbayScraper(**settings.SCRAPER_OPTIONS) as scrapper:
         result = scrapper.get_product(external_id)
+
+    print(result)
     
     item, created = Item.objects.get_or_create(external_id=external_id, source=SourceName.EBAY)
     item.name = result.name
