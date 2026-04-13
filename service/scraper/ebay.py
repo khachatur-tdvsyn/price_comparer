@@ -91,6 +91,19 @@ class EbayScraper(BaseShopScraper):
             return Decimal(matches[0]) if len(matches) > 0 else None
         return None
     
+    def _get_product_category(self):
+        element = self.driver.find_element(By.CSS_SELECTOR, '.vim.x-breadcrumb.x-breadcrumb__relocation')
+        key = element.find_element(By.CSS_SELECTOR, '.x-breadcrumb__header').text
+
+        value_list_item = element.find_elements(By.CSS_SELECTOR, '.x-breadcrumb__wrapper > * ul > li')
+        value_list = []
+        for i in value_list_item:
+            t = i.get_property('innerText')
+            if not i.get_attribute('hidden') and t:
+                value_list.append(t)
+
+        return {key: value_list}
+    
     def get_product(self, external_id):
         product_url = self.base_url + '/itm/{0}'.format(external_id)
         self.driver.get(product_url)
@@ -109,6 +122,8 @@ class EbayScraper(BaseShopScraper):
         for i in option_items:
             key, value = i.find_element(By.TAG_NAME, 'dt'), i.find_element(By.TAG_NAME, 'dd')
             options[key.text] = value.text
+
+        options |= self._get_product_category()
         
         seller_item = self.driver.find_element(By.CSS_SELECTOR, '.x-store-information__store-name > a')
         # Fees section
