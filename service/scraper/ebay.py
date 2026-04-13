@@ -131,6 +131,10 @@ class EbayScraper(BaseShopScraper):
 
         discount_item = self._find_element_nowait(By.CSS_SELECTOR, '.x-price-transparency--discount')
 
+        image_items = self.driver.find_elements(By.CSS_SELECTOR, '.ux-image-carousel-item.image-treatment.image > img')
+        image_urls = [i.get_attribute('src') for i in image_items]
+
+
         return ScrapedProduct(
             external_id=external_id,
             name=name_item.text,
@@ -141,9 +145,10 @@ class EbayScraper(BaseShopScraper):
             seller_link=seller_item.get_attribute('href'),
             options=options,
             fees=[
-                Fee(FeeType.SHIPPING, self._get_price(shipping_fee_item))
+                Fee(FeeType.SHIPPING, self._get_price(shipping_fee_item), description=shipping_fee_item.text),
             ],
-            discount=self._get_discount_value(discount_item)
+            discount=self._get_discount_value(discount_item),
+            image_urls=image_urls
         )
         
         # Temp: get .vim x-breadcrumb 
@@ -164,6 +169,7 @@ class EbayScraper(BaseShopScraper):
             price_item = i.find_element(By.CSS_SELECTOR, '.su-styled-text.primary.bold.large-1.s-card__price')
             old_price_item = self._find_element_nowait(By.CSS_SELECTOR, '.su-styled-text.secondary.strikethrough.large', i)
             link_item = i.find_element(By.CSS_SELECTOR, '.s-card__link')
+            image_item = i.find_element(By.CSS_SELECTOR, '.s-card__image')
 
             id = self.ID_RE.match(str(link_item.get_attribute('href')))
 
@@ -184,11 +190,11 @@ class EbayScraper(BaseShopScraper):
 
             results.append(ScrapedGeneralResult(
                 external_id=id.group(1),
-                image_url=None,
+                image_url=image_item.get_attribute('src'),
                 name=name_item.text,
                 price=price,
                 discount=get_discount(price, old_price),
-                link=self._normalize_url(link_item.get_attribute('href'))
+                link=self._normalize_url(link_item.get_attribute('href')),
             ))
 
         return results

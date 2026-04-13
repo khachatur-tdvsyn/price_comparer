@@ -30,6 +30,7 @@ class Fee:
     fee_type: FeeType
     amount: Decimal
     currency: str = "USD"
+    description: Optional[str] = None
 
 @dataclass
 class ScrapedProduct:

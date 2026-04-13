@@ -4,7 +4,7 @@ from django.db import transaction
 from celery import shared_task
 
 from service.scraper.ebay import EbayScraper
-from main.models import Item, RecordedData, SourceName, Seller, Fee
+from main.models import Item, ItemMedia, RecordedData, SourceName, Seller, Fee
 from .sessions import SessionManager
 
 EBAY_SCRAPER_TYPE = 'ebay'
@@ -26,6 +26,12 @@ def get_ebay_homepage_results():
                 source=SourceName.EBAY
             )
             item.save()
+        
+        if r.image_url:
+            media, created = ItemMedia.objects.get_or_create(
+                item=item,
+                url=r.image_url
+            )
 
         recorded_data = RecordedData(
             item=item,
@@ -56,6 +62,12 @@ def get_ebay_search_results(search_text, max_results):
                 source=SourceName.EBAY
             )
             item.save()
+        
+        if r.image_url:
+            media, created = ItemMedia.objects.get_or_create(
+                item=item,
+                url=r.image_url
+            )
 
         recorded_data = RecordedData(
             item=item,
@@ -91,6 +103,14 @@ def get_ebay_product_result(external_id):
     
     if created:
         item.seller = seller
+    
+    for u in result.image_urls:
+        if u:
+            media, created = ItemMedia.objects.get_or_create(
+                item=item,
+                url=u
+            )
+            print(f'Created media for {item}: {media.url=}')
 
     # Add recorded data for this item
     recorded_data = RecordedData(
@@ -102,16 +122,15 @@ def get_ebay_product_result(external_id):
     recorded_data.save()
 
     for f in result.fees:
-        if f.amount:
-            fee, created = Fee.objects.get_or_create(
-                item=item,
-                fee_type=int(f.fee_type),
-                amount=f.amount,
-                currency=f.currency
-            )
-            print('Added new fee')
-        else:
-            print('There is no amount in', f)
+        fee, created = Fee.objects.get_or_create(
+            item=item,
+            fee_type=int(f.fee_type),
+            amount=f.amount or 0,
+            currency=f.currency
+        )
+        fee.description = f.description
+        fee.save()
+        print('Added new fee')
 
     item.save()
 
