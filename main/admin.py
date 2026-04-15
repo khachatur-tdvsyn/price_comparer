@@ -1,6 +1,6 @@
 from django.contrib import admin, messages
 
-from .models import Fee, Item, ItemMedia, RecordedData, Seller, Tag
+from .models import Fee, Item, ItemMedia, RecordedData, Seller, Tag, Currency, CurrencyExchangeRateHistory
 from scrape.tasks import get_ebay_homepage_results
 
 
@@ -76,4 +76,11 @@ class ItemMediaAdmin(admin.ModelAdmin):
     search_fields = ("item__name", "alt_text")
     readonly_fields = ("uploaded_at",)
 
+@admin.register(Currency)
+class CurrencyAdmin(admin.ModelAdmin):
+    ...
+
+@admin.register(CurrencyExchangeRateHistory)
+class CurrencyExchangeHistoryAdmin(admin.ModelAdmin):
+    ...
     

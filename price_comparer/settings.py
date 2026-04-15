@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -38,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'main',
+    'scrape',
     'rest_framework',
     'drf_spectacular'
 ]
@@ -141,6 +143,13 @@ CELERY_BROKER_URL = 'redis://localhost:6379/0'
 CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
+
+# CELERY_BEAT_SCHEDULE = {
+#     'fetch-currencies-daily': {
+#         'task': 'scrape.tasks.fetch_currencies_task',
+#         'schedule': crontab(hour=0, minute=0),  # Daily at midnight
+#     },
+# }
 
 # Scraper session settings
 SCRAPER_OPTIONS = {

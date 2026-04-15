@@ -126,3 +126,38 @@ class ItemMedia(models.Model):
 
     def __str__(self):
         return f"{self.media_type} for {self.item.name}"
+
+class Currency(models.Model):
+    code = models.CharField(max_length=3, unique=True)
+    name = models.CharField(max_length=50)
+    symbol = models.CharField(max_length=5, null=True)
+    country_name = models.CharField(max_length=100, null=True, blank=True)
+    exchange_rate = models.DecimalField(max_digits=10, decimal_places=4)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "Currencies"
+
+    def __str__(self):
+        return f"{self.code} - {self.name}"
+
+
+class CurrencyExchangeRateHistory(models.Model):
+    currency = models.ForeignKey(
+        Currency, 
+        on_delete=models.CASCADE, 
+        related_name='exchange_rate_history'
+    )
+    exchange_rate = models.DecimalField(max_digits=10, decimal_places=4)
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Currency Exchange Rate Histories"
+        indexes = [
+            models.Index(fields=['currency', '-recorded_at']),
+        ]
+        # Keep records sorted by date
+        ordering = ['-recorded_at']
+
+    def __str__(self):
+        return f"{self.currency.code} @ {self.exchange_rate} on {self.recorded_at}"

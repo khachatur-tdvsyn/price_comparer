@@ -1,11 +1,14 @@
+from decimal import Decimal
+
 from django.conf import settings
 from django.db import transaction
 
 from celery import shared_task
 
 from service.scraper.ebay import EbayScraper
-from main.models import Item, ItemMedia, RecordedData, SourceName, Seller, Fee
+from main.models import Item, ItemMedia, RecordedData, SourceName, Seller, Fee, Currency, CurrencyExchangeRateHistory
 from .sessions import SessionManager
+from service.scraper.currency import fetch_currencies_frankfurter
 
 EBAY_SCRAPER_TYPE = 'ebay'
 
@@ -140,5 +143,31 @@ def get_ebay_product_result(external_id):
         'external_id': getattr(item, 'id'),
     }
 
-
+def fetch_and_update_currencies():
+    """Fetch currencies and store history"""
     
+    # Fetch from your data source
+    success, currency_data = fetch_currencies_frankfurter()  # Your scraping logic
+
+    if not success:
+        print('Something went wrong', currency_data)
+        return
+    
+    for data in currency_data:
+        currency, created = Currency.objects.get_or_create(
+            code=data['quote'],
+            defaults={
+                'exchange_rate': Decimal(data['rate'])
+            }
+        )
+        
+        # Store history if rate changed
+        if not created and currency.exchange_rate != Decimal(data['rate']):
+            CurrencyExchangeRateHistory.objects.create(
+                currency=currency,
+                exchange_rate=currency.exchange_rate  # Store old value
+            )
+        
+        # Update current rate
+        currency.exchange_rate = Decimal(data['rate'])
+        currency.save()

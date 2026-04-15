@@ -1,4 +1,3 @@
-# project_name/celery.py
 import os
 from celery import Celery
 
