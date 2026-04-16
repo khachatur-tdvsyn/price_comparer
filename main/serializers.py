@@ -15,12 +15,16 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class FeeSerializer(serializers.ModelSerializer):
+    converted_amount = serializers.DecimalField(max_digits=20, decimal_places=4, read_only=True)
+    target_currency = serializers.CharField(read_only=True)
     class Meta:
         model = Fee
         fields = '__all__'
 
 
 class RecordedDataSerializer(serializers.ModelSerializer):
+    converted_price_amount = serializers.DecimalField(max_digits=20, decimal_places=4, read_only=True)
+    target_currency_code = serializers.CharField(read_only=True)
     class Meta:
         model = RecordedData
         fields = '__all__'
