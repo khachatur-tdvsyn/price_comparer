@@ -132,7 +132,7 @@ class Currency(models.Model):
     name = models.CharField(max_length=50)
     symbol = models.CharField(max_length=5, null=True)
     country_name = models.CharField(max_length=100, null=True, blank=True)
-    exchange_rate = models.DecimalField(max_digits=10, decimal_places=4)
+    exchange_rate = models.DecimalField(max_digits=20, decimal_places=4)
     last_updated = models.DateTimeField(auto_now=True)
 
     class Meta:
@@ -148,7 +148,7 @@ class CurrencyExchangeRateHistory(models.Model):
         on_delete=models.CASCADE, 
         related_name='exchange_rate_history'
     )
-    exchange_rate = models.DecimalField(max_digits=10, decimal_places=4)
+    exchange_rate = models.DecimalField(max_digits=20, decimal_places=4)
     recorded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
