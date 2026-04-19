@@ -39,5 +39,5 @@ class ItemMediaSerializer(serializers.ModelSerializer):
 class ItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Item
-        fields = ['external_id', 'source', 'name', 'description', 'created', 'options', 'link', 'source', 'seller', 'tags']
+        fields = ['id', 'external_id', 'source', 'name', 'description', 'created', 'options', 'link', 'source', 'seller', 'tags']
         

@@ -1,6 +1,18 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 
+from nanoid import generate
+
+class NanoidModel(models.Model):
+    id = models.CharField(
+        primary_key=True,
+        default=generate,
+        max_length=21,
+        editable=False,
+    )
+
+    class Meta:
+        abstract = True
 
 class SourceName(models.TextChoices):
     UNKNOWN = 'unkn', "Unknown"
@@ -10,7 +22,7 @@ class SourceName(models.TextChoices):
     WILDBERRIES = 'wbrs', 'WildBerries'
 
 
-class Seller(models.Model):
+class Seller(NanoidModel):
     name = models.CharField(max_length=255)
     source = models.CharField(max_length=4, choices=SourceName.choices, default=SourceName.UNKNOWN)
     profile_url = models.URLField(blank=True, null=True)
@@ -21,13 +33,13 @@ class Seller(models.Model):
     def __str__(self):
         return f"{self.name} ({self.source})"
 
-class Tag(models.Model):
+class Tag(NanoidModel):
     name = models.CharField(max_length=100)
     slug = models.SlugField(max_length=100, unique=True)
     styled_name = models.CharField(max_length=512, null=True, blank=True)
 
 
-class Item(models.Model):
+class Item(NanoidModel):
     name = models.CharField(max_length=500)
     description = models.TextField(blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
@@ -55,7 +67,7 @@ class Item(models.Model):
         return self.name
 
 
-class Fee(models.Model):
+class Fee(NanoidModel):
     class FeeType(models.IntegerChoices):
         SHIPPING = 1, "Shipping"
         TAX = 2, "Tax"
@@ -74,7 +86,7 @@ class Fee(models.Model):
         return f"{self.fee_type} — {self.amount} {self.currency}"
 
 
-class RecordedData(models.Model):
+class RecordedData(NanoidModel):
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="records")
     recorded_at = models.DateTimeField(auto_now_add=True)
     price = models.DecimalField(max_digits=12, decimal_places=2)
@@ -108,7 +120,7 @@ class RecordedData(models.Model):
         return f"{self.item.name} @ {self.price} {self.currency} ({self.recorded_at:%Y-%m-%d %H:%M})"
 
 
-class ItemMedia(models.Model):
+class ItemMedia(NanoidModel):
     class MediaType(models.IntegerChoices):
         IMAGE = 0, "Image"
         VIDEO = 1, "Video"
