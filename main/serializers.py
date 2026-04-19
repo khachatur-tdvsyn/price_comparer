@@ -43,5 +43,10 @@ class ItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Item
         fields = '__all__'
-        # fields = ['id', 'external_id', 'source', 'name', 'price', 'currency', 'total_price', 'description', 'created', 'options', 'link', 'source', 'seller', 'tags']
+
+class ItemHistorySerializer(serializers.ModelSerializer):
+    history = RecordedDataSerializer(many=True)
+    class Meta:
+        model = Item
+        fields = ['id', 'external_id', 'source', 'name', 'description', 'link', 'history']
         
