@@ -15,8 +15,8 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class FeeSerializer(serializers.ModelSerializer):
-    converted_amount = serializers.DecimalField(max_digits=20, decimal_places=4, read_only=True)
-    target_currency = serializers.CharField(read_only=True)
+    converted_price_amount = serializers.DecimalField(max_digits=20, decimal_places=4, read_only=True)
+    target_currency_code = serializers.CharField(read_only=True)
     class Meta:
         model = Fee
         fields = '__all__'
@@ -42,5 +42,6 @@ class ItemSerializer(serializers.ModelSerializer):
     currency = serializers.CharField(read_only=True)
     class Meta:
         model = Item
-        fields = ['id', 'external_id', 'source', 'name', 'price', 'currency', 'total_price', 'description', 'created', 'options', 'link', 'source', 'seller', 'tags']
+        fields = '__all__'
+        # fields = ['id', 'external_id', 'source', 'name', 'price', 'currency', 'total_price', 'description', 'created', 'options', 'link', 'source', 'seller', 'tags']
         
