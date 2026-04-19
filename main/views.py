@@ -3,7 +3,7 @@ from decimal import Decimal
 from django.shortcuts import render
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.db.models import (
-    F, Case, When, DecimalField, Subquery, OuterRef, Value, Q
+    F, Case, When, DecimalField, Subquery, OuterRef, Value, Q, Sum
 )
 from django.db.models.functions import Cast
 from rest_framework import viewsets
@@ -33,6 +33,23 @@ class TagViewSet(viewsets.ModelViewSet):
 class ItemViewSet(viewsets.ModelViewSet):
     queryset = Item.objects.all().order_by('-created')
     serializer_class = ItemSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        # Note: total_price returns null if there is no information about fee.
+        return queryset.annotate(
+            price=Subquery(
+                RecordedData.objects.filter(item=OuterRef('pk')).values('price')[:1])
+            ,
+            total_price=Subquery(
+                RecordedData.objects.filter(item=OuterRef('pk')).values('price')[:1]) + \
+                    Sum(Fee.objects.filter(item=OuterRef('pk')).values('amount'))
+            ,
+            currency=Subquery(
+                RecordedData.objects.filter(item=OuterRef('pk')).values('currency')[:1]
+            ),
+        )
 
     def retrieve(self, request, external_id=None, source=None):
         try:

@@ -37,7 +37,10 @@ class ItemMediaSerializer(serializers.ModelSerializer):
 
 
 class ItemSerializer(serializers.ModelSerializer):
+    price = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
+    total_price = serializers.DecimalField(max_digits=20, decimal_places=2, read_only=True)
+    currency = serializers.CharField(read_only=True)
     class Meta:
         model = Item
-        fields = ['id', 'external_id', 'source', 'name', 'description', 'created', 'options', 'link', 'source', 'seller', 'tags']
+        fields = ['id', 'external_id', 'source', 'name', 'price', 'currency', 'total_price', 'description', 'created', 'options', 'link', 'source', 'seller', 'tags']
         
