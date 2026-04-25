@@ -144,12 +144,12 @@ CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 
-# CELERY_BEAT_SCHEDULE = {
-#     'fetch-currencies-daily': {
-#         'task': 'scrape.tasks.fetch_currencies_task',
-#         'schedule': crontab(hour=0, minute=0),  # Daily at midnight
-#     },
-# }
+CELERY_BEAT_SCHEDULE = {
+    'fetch-currencies-daily': {
+        'task': 'scrape.tasks.fetch_and_update_currencies',
+        'schedule': crontab(hour=00, minute=26),
+    },
+}
 
 # Scraper session settings
 SCRAPER_OPTIONS = {

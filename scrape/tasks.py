@@ -143,6 +143,8 @@ def get_ebay_product_result(external_id):
         'external_id': getattr(item, 'id'),
     }
 
+@shared_task
+@transaction.atomic
 def fetch_and_update_currencies():
     """Fetch currencies and store history"""
     
