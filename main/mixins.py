@@ -17,10 +17,11 @@ class CurrencyConverterMixin:
         try:
             # Verify currency exists
             target = Currency.objects.get(code=currency.upper())
+
             
             queryset = queryset.annotate(
                 converted_price_amount=Cast(
-                    (self.subquery or F(field))* Decimal(str(target.exchange_rate)),
+                    (self.subquery or F(field))* Decimal(str(target.exchange_rate)) / F('currency_object__exchange_rate'),
                     DecimalField(max_digits=10, decimal_places=2)
                 ),
                 target_currency_code=Value(currency)

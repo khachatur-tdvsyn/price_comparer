@@ -53,6 +53,8 @@ class ItemViewSet(CurrencyConverterMixin, viewsets.ModelViewSet):
                     RecordedData.objects.filter(item=OuterRef('pk')).values('price')[:1]
                 ) * Subquery(
                     Currency.objects.filter(code=target_currency.upper()).values('exchange_rate')[:1]
+                )  / Subquery(
+                    RecordedData.objects.filter(item=OuterRef('pk')).values('currency_object__exchange_rate')[:1]
                 ),
                 total_price=(
                     Subquery(
@@ -60,6 +62,8 @@ class ItemViewSet(CurrencyConverterMixin, viewsets.ModelViewSet):
                         Sum(Fee.objects.filter(item=OuterRef('pk')).values('amount'))
                     ) * Subquery(
                         Currency.objects.filter(code=target_currency.upper()).values('exchange_rate')[:1]
+                    ) / Subquery(
+                        RecordedData.objects.filter(item=OuterRef('pk')).values('currency_object__exchange_rate')[:1]
                     ),
                 currency=Value(target_currency)
             )

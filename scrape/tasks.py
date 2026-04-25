@@ -35,10 +35,13 @@ def get_ebay_homepage_results():
                 item=item,
                 url=r.image_url
             )
+        
+        currency_obj = Currency.objects.get(code=r.currency)
 
         recorded_data = RecordedData(
             item=item,
             currency=r.currency,
+            currency_object=currency_obj,
             price=r.price,
             discount=r.discount,
         )
@@ -71,10 +74,13 @@ def get_ebay_search_results(search_text, max_results):
                 item=item,
                 url=r.image_url
             )
+        
+        currency_obj = Currency.objects.get(code=r.currency)
 
         recorded_data = RecordedData(
             item=item,
             currency=r.currency,
+            currency_object=currency_obj,
             price=r.price,
             discount=r.discount,
         )
@@ -114,23 +120,28 @@ def get_ebay_product_result(external_id):
                 url=u
             )
             print(f'Created media for {item}: {media.url=}')
+    
+    currency_obj = Currency.objects.get(code=result.currency)
 
     # Add recorded data for this item
     recorded_data = RecordedData(
         item=item,
         price=result.price,
         discount=result.discount,
-        currency=result.currency
+        currency=result.currency,
+        currency_object=currency_obj
     )
     recorded_data.save()
 
     for f in result.fees:
+        currency_obj = Currency.objects.get(code=f.currency)
         fee, created = Fee.objects.get_or_create(
             item=item,
             fee_type=int(f.fee_type),
             amount=f.amount or 0,
             currency=f.currency
         )
+        fee.currency_object = currency_obj
         fee.description = f.description
         fee.save()
         print('Added new fee')

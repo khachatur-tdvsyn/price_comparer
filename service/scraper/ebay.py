@@ -166,12 +166,16 @@ class EbayScraper(BaseShopScraper):
                 break
 
             name_item = i.find_element(By.CSS_SELECTOR, '.s-card__title:nth-child(1)')
-            price_item = i.find_element(By.CSS_SELECTOR, '.su-styled-text.primary.bold.large-1.s-card__price')
+            price_item = self._find_element_nowait(By.CSS_SELECTOR, '.su-styled-text.primary.bold.large-1.s-card__price', i)
             old_price_item = self._find_element_nowait(By.CSS_SELECTOR, '.su-styled-text.secondary.strikethrough.large', i)
             link_item = i.find_element(By.CSS_SELECTOR, '.s-card__link')
             image_item = i.find_element(By.CSS_SELECTOR, '.s-card__image')
 
             id = self.ID_RE.match(str(link_item.get_attribute('href')))
+
+            if price_item is None:
+                print('No price item for the ', name_item.text, price_item.get_attribute('href'), 'skip!')
+                continue
 
             print(f'price: {price_item.text}, old price {old_price_item and old_price_item.text}')
             price = self._get_price(price_item)

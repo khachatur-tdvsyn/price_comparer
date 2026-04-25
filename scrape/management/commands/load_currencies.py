@@ -51,6 +51,12 @@ class Command(BaseCommand):
                     created_count += 1
                 else:
                     updated_count += 1
+            
+            
+            usd_currency = Currency.objects.get(code='USD')
+            usd_currency.exchange_rate = 1
+            usd_currency.save()
+
  
             self.stdout.write(
                 self.style.SUCCESS(

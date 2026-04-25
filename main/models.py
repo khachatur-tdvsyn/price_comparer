@@ -38,6 +38,41 @@ class Tag(NanoidModel):
     slug = models.SlugField(max_length=100, unique=True)
     styled_name = models.CharField(max_length=512, null=True, blank=True)
 
+class Currency(models.Model):
+    code = models.CharField(max_length=3, unique=True)
+    name = models.CharField(max_length=50)
+    symbol = models.CharField(max_length=5, null=True)
+    country_name = models.CharField(max_length=100, null=True, blank=True)
+    exchange_rate = models.DecimalField(max_digits=20, decimal_places=4)
+    last_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "Currencies"
+
+    def __str__(self):
+        return f"{self.code} - {self.name}"
+
+
+class CurrencyExchangeRateHistory(models.Model):
+    currency = models.ForeignKey(
+        Currency, 
+        on_delete=models.CASCADE, 
+        related_name='exchange_rate_history'
+    )
+    exchange_rate = models.DecimalField(max_digits=20, decimal_places=4)
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "Currency Exchange Rate Histories"
+        indexes = [
+            models.Index(fields=['currency', '-recorded_at']),
+        ]
+        # Keep records sorted by date
+        ordering = ['-recorded_at']
+
+    def __str__(self):
+        return f"{self.currency.code} @ {self.exchange_rate} on {self.recorded_at}"
+
 
 class Item(NanoidModel):
     name = models.CharField(max_length=500)
@@ -79,6 +114,7 @@ class Fee(NanoidModel):
     fee_type = models.SmallIntegerField(choices=FeeType.choices)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=10, default="USD")
+    currency_object = models.ForeignKey(Currency, null=True, blank=True, related_name='fees', on_delete=models.CASCADE)
     country = models.CharField(max_length=100, blank=True, null=True)
     description = models.CharField(max_length=255, blank=True, null=True)
 
@@ -91,6 +127,7 @@ class RecordedData(NanoidModel):
     recorded_at = models.DateTimeField(auto_now_add=True)
     price = models.DecimalField(max_digits=12, decimal_places=2)
     currency = models.CharField(max_length=10, default="USD")
+    currency_object = models.ForeignKey(Currency, null=True, blank=True, related_name='prices', on_delete=models.CASCADE)
     discount = models.DecimalField(
         max_digits=5,
         decimal_places=2,
@@ -138,38 +175,3 @@ class ItemMedia(NanoidModel):
 
     def __str__(self):
         return f"{self.media_type} for {self.item.name}"
-
-class Currency(models.Model):
-    code = models.CharField(max_length=3, unique=True)
-    name = models.CharField(max_length=50)
-    symbol = models.CharField(max_length=5, null=True)
-    country_name = models.CharField(max_length=100, null=True, blank=True)
-    exchange_rate = models.DecimalField(max_digits=20, decimal_places=4)
-    last_updated = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name_plural = "Currencies"
-
-    def __str__(self):
-        return f"{self.code} - {self.name}"
-
-
-class CurrencyExchangeRateHistory(models.Model):
-    currency = models.ForeignKey(
-        Currency, 
-        on_delete=models.CASCADE, 
-        related_name='exchange_rate_history'
-    )
-    exchange_rate = models.DecimalField(max_digits=20, decimal_places=4)
-    recorded_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name_plural = "Currency Exchange Rate Histories"
-        indexes = [
-            models.Index(fields=['currency', '-recorded_at']),
-        ]
-        # Keep records sorted by date
-        ordering = ['-recorded_at']
-
-    def __str__(self):
-        return f"{self.currency.code} @ {self.exchange_rate} on {self.recorded_at}"
