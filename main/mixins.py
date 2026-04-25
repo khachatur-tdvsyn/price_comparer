@@ -12,26 +12,31 @@ from .serializers import ItemSerializer
 class CurrencyConverterMixin:
     price_field: str = 'amount'
     subquery: Subquery | None = None
+
+    def annotate_converted_currency(self, queryset, currency, field):
+        try:
+            # Verify currency exists
+            target = Currency.objects.get(code=currency.upper())
+            
+            queryset = queryset.annotate(
+                converted_price_amount=Cast(
+                    (self.subquery or F(field))* Decimal(str(target.exchange_rate)),
+                    DecimalField(max_digits=10, decimal_places=2)
+                ),
+                target_currency_code=Value(currency)
+            )
+        except Currency.DoesNotExist:
+            # If currency doesn't exist, just return normal queryset
+            pass
+        
+        return queryset
     
     def get_queryset(self):
         queryset = super().get_queryset()
         target_currency = self.request.query_params.get('currency')
 
         if target_currency:
-            try:
-                # Verify currency exists
-                target = Currency.objects.get(code=target_currency.upper())
-                
-                queryset = queryset.annotate(
-                    converted_price_amount=Cast(
-                        (self.subquery or F(self.price_field))* Decimal(str(target.exchange_rate)),
-                        DecimalField(max_digits=10, decimal_places=2)
-                    ),
-                    target_currency_code=Value(target_currency)
-                )
-            except Currency.DoesNotExist:
-                # If currency doesn't exist, just return normal queryset
-                pass
+            queryset = self.annotate_converted_currency(queryset=queryset, currency=target_currency, field=self.price_field)
         
         return queryset
     

@@ -127,6 +127,10 @@ class ItemViewSet(CurrencyConverterMixin, viewsets.ModelViewSet):
                 required=True,
             ),
             OpenApiParameter(
+                name='currency',
+                required=False,
+            ),
+            OpenApiParameter(
                 name='from_time',
                 required=False,
             ),
@@ -143,6 +147,7 @@ class ItemViewSet(CurrencyConverterMixin, viewsets.ModelViewSet):
         source = query_params.get('source')
 
         from_time, to_time = query_params.get('from_time'), query_params.get('to_time')
+        currency = query_params.get('currency')
         
 
         from_time = datetime.fromisoformat(from_time) if from_time else datetime.fromtimestamp(0)
@@ -160,6 +165,9 @@ class ItemViewSet(CurrencyConverterMixin, viewsets.ModelViewSet):
                 recorded_at__gte=from_time,
                 recorded_at__lte=to_time
             )
+            
+            if currency:
+                history_queryset = self.annotate_converted_currency(history_queryset, currency, 'price')
 
             prefetch = Prefetch(
                 'records',
