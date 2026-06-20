@@ -19,7 +19,7 @@ def get_discount(new_price, old_price):
 class EbayScraper(BaseShopScraper):
     base_url = 'https://www.ebay.com'
 
-    items_list_selector = r'#s0-2-0-1-1-0-2-9-4-11-2-0-3-0-1-3-\@homepage-0-0-5\[0\]-\@row_xc_homepage_general_dweb_so-1-0-\@102690-featured-deals-2-7-4-1-11-1-0-4-2-0-5-1-0-list'
+    items_list_selector = '.dp-item-carousel-module__wrapper'
     ID_RE = re.compile(r'https:\/\/www\.ebay\.com\/itm\/(\d+)\??.*')
     PRICE_RE = re.compile(r'.?([\d\.]+)')
     DISCOUNT_RE = re.compile(r'(\d+)%')
@@ -55,11 +55,11 @@ class EbayScraper(BaseShopScraper):
             if c >= max_results:
                 break
 
-            image = item.find_element(By.CSS_SELECTOR, 'article > div:nth-child(1) > a:nth-child(2) > img:nth-child(1)')
-            link = item.find_element(By.CSS_SELECTOR, 'article > a')
-            name = item.find_element(By.CSS_SELECTOR, 'article > a > div:nth-child(1) > span:nth-child(1)')
+            image = item.find_element(By.CSS_SELECTOR, '.product-image.block')
+            link = item.find_element(By.CSS_SELECTOR, 'article > * > a')
+            name = item.find_element(By.CSS_SELECTOR, 'article > * > a > div:nth-child(1) > span:nth-child(1)')
             
-            price_item = item.find_element(By.CSS_SELECTOR, 'article > a > div:nth-child(1) > div:nth-child(2) > span:nth-child(1)')
+            price_item = item.find_element(By.CSS_SELECTOR, 'article > * > a > div:nth-child(1) > div:nth-child(2) > span:nth-child(1)')
 
             
             start_price = self._find_element_nowait(By.CSS_SELECTOR, 'del:nth-child(2)', price_item)
@@ -108,8 +108,8 @@ class EbayScraper(BaseShopScraper):
         product_url = self.base_url + '/itm/{0}'.format(external_id)
         self.driver.get(product_url)
 
-        name_item = self.driver.find_element(By.XPATH, '/html/body/div[2]/main/div[1]/div[1]/div[4]/div/div/div[2]/div/div/div[1]/h1/span')
-        price_item = self.driver.find_element(By.XPATH, '/html/body/div[2]/main/div[1]/div[1]/div[4]/div/div/div[2]/div/div/div[3]/div/div/div/span[1]')
+        name_item = self.driver.find_element(By.CSS_SELECTOR, '.x-item-title__mainTitle > span')
+        price_item = self.driver.find_element(By.CSS_SELECTOR, '.x-price-primary > span')
         
         # description_item = self.driver.find_element(By.XPATH, '/html/body/div[2]/main/div[1]/div[1]/div[5]/div[1]/div/div[2]/div/div/div[2]')
         description_item = self.driver.find_element(By.CSS_SELECTOR, '.vim.d-item-description')
@@ -169,7 +169,7 @@ class EbayScraper(BaseShopScraper):
             price_item = self._find_element_nowait(By.CSS_SELECTOR, '.su-styled-text.primary.bold.large-1.s-card__price', i)
             old_price_item = self._find_element_nowait(By.CSS_SELECTOR, '.su-styled-text.secondary.strikethrough.large', i)
             link_item = i.find_element(By.CSS_SELECTOR, '.s-card__link')
-            image_item = i.find_element(By.CSS_SELECTOR, '.s-card__image')
+            image_item = self._find_element_nowait(By.CSS_SELECTOR, '.s-card__image', i)
 
             id = self.ID_RE.match(str(link_item.get_attribute('href')))
 
@@ -194,7 +194,7 @@ class EbayScraper(BaseShopScraper):
 
             results.append(ScrapedGeneralResult(
                 external_id=id.group(1),
-                image_url=image_item.get_attribute('src'),
+                image_url=(image_item.get_attribute('src') if image_item else None),
                 name=name_item.text,
                 price=price,
                 discount=get_discount(price, old_price),
@@ -206,7 +206,7 @@ class EbayScraper(BaseShopScraper):
 
 if __name__ == '__main__':
     with EbayScraper(False) as scrapper:
-        results = scrapper.search('iphone', 7)
+        results = scrapper.get_homepage_products()
         with open('results.txt', 'w') as f:
             print(results)
             print(results, file=f, flush=True)
